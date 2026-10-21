@@ -6,6 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import SermonMode from "@/pages/SermonMode";
 import ListenerMode from "@/pages/ListenerMode";
+import History from "@/pages/History";
+import TranscriptDetail from "@/pages/TranscriptDetail";
+import AuthPage from "@/pages/AuthPage";
 import NotFound from "@/pages/not-found";
 
 // Preekmodus (per-sentence editable translation review) is the front door —
@@ -21,6 +24,9 @@ function Router() {
       <Route path="/" component={SermonMode} />
       <Route path="/live" component={Home} />
       <Route path="/listen" component={ListenerMode} />
+      <Route path="/history" component={History} />
+      <Route path="/transcriptions/:id" component={TranscriptDetail} />
+      <Route path="/auth" component={AuthPage} />
       <Route path="/sermon">
         <Redirect to="/" />
       </Route>

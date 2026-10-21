@@ -40,7 +40,7 @@ import { tmpdir } from 'os';
 import { join, basename, extname } from 'path';
 import { RATE, decodeTo16kMono, planChunks, transcribePlannedChunks, type ChunkingSetup } from './lib/asr-chunks';
 import { SERMON_VAD_SILENCE_MS, SERMON_MIN_CHUNK_MS, SERMON_MAX_CHUNK_MS } from '../client/src/lib/sermon/chunk-limits';
-import { computeWER, computeCER, countAsrArtifacts, deletionRuns, normalizeForScoring, parseAliases } from '../tests/lib/wer';
+import { computeWER, computeCER, countAsrArtifacts, deletionRuns, normalizeForScoring, parseAliases } from './lib/wer';
 
 const ROOT = join(import.meta.dirname, '..');
 const AUDIO_DIR = join(ROOT, 'tests/fixtures/audio');

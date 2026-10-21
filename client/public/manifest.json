@@ -1,7 +1,7 @@
 {
-  "name": "CTT.AY - Contextual Transcriptions & Translations",
-  "short_name": "CTT.AY",
-  "description": "Live audio transcription and multi-language translation",
+  "name": "Voxora - Real-Time AI Speech to Text",
+  "short_name": "Voxora",
+  "description": "Your Voice. Instantly Understood.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#e0f7fa",

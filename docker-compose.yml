@@ -8,6 +8,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "5001"
+      FRONTEND_ORIGIN: "http://localhost:5001"
       GLOSSARY_DIR: /app/data
     volumes:
       # data/ is gitignored and not baked into the image (see Dockerfile) —

@@ -10,12 +10,13 @@ export default defineConfig({
       OPENAI_API_KEY: 'test-key-stub',
       ANTHROPIC_API_KEY: 'test-key-stub',
       ASSEMBLYAI_API_KEY: 'test-key-stub',
+      ALLOW_ANONYMOUS_PERSISTENCE: 'true',
     },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'client/src'),
-      '@shared': path.resolve(__dirname, 'shared'),
+      '@': path.resolve(import.meta.dirname, 'client/src'),
+      '@shared': path.resolve(import.meta.dirname, 'shared'),
     },
   },
 });

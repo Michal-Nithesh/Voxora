@@ -4,8 +4,6 @@ import { createHash } from 'crypto';
 import { sanitizeGlossary } from './prompt-safety';
 import { homophoneExamples, NO_ANNOTATIONS_RULE, guardCorrection } from './correction-prompt';
 
-const sharedClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 // LRU cache for per-user OpenAI clients. Keyed by SHA-256 of the API key so
 // raw keys are never stored as Map keys. Max 50 entries; oldest evicted first.
 const MAX_CLIENTS = 50;
@@ -15,8 +13,9 @@ const clientCache = new Map<string, OpenAI>();
 // per-API-key client cache instead of constructing a fresh OpenAI client
 // per request.
 export function client(apiKey?: string): OpenAI {
-  if (!apiKey) return sharedClient;
-  const hash = createHash('sha256').update(apiKey).digest('hex');
+  const effectiveKey = apiKey || process.env.OPENAI_API_KEY || '';
+  if (!effectiveKey) throw new Error('No OpenAI API key provided. Add one in Settings or configure OPENAI_API_KEY.');
+  const hash = createHash('sha256').update(effectiveKey).digest('hex');
   if (clientCache.has(hash)) {
     const c = clientCache.get(hash)!;
     // Move to end (most-recently-used)
@@ -27,7 +26,7 @@ export function client(apiKey?: string): OpenAI {
   if (clientCache.size >= MAX_CLIENTS) {
     clientCache.delete(clientCache.keys().next().value!);
   }
-  const c = new OpenAI({ apiKey });
+  const c = new OpenAI({ apiKey: effectiveKey });
   clientCache.set(hash, c);
   return c;
 }

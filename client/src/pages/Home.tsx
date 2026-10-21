@@ -23,6 +23,7 @@ import { StreamingTranscription } from '@/lib/streaming-transcription';
 import { LocalWhisperTranscription } from '@/lib/local-whisper-transcription';
 import { useAudioQuality } from '@/hooks/useAudioQuality';
 import { saveSession } from '@/lib/session-db';
+import { createTranscription } from '@/lib/api';
 
 type AnyTranscriptionBackend = StreamingTranscription | ChunkBasedTranscription | BrowserSpeechTranscription | LocalWhisperTranscription;
 
@@ -150,6 +151,7 @@ export default function Home() {
   const targetLanguageRef = useRef(targetLanguage);
   const detectSpeakersRef = useRef(detectSpeakers);
   const settingsRef = useRef(settings);
+  const savedSessionTextRef = useRef<string | null>(null);
 
   useEffect(() => { sourceLanguageRef.current = sourceLanguage; }, [sourceLanguage]);
   useEffect(() => { targetLanguageRef.current = targetLanguage; }, [targetLanguage]);
@@ -380,6 +382,7 @@ export default function Home() {
       setSubtitlePrevious('');
       subtitleCurrentRef.current = '';
       transcriptionSegmentsRef.current = [];
+      savedSessionTextRef.current = null;
       sessionCostRef.current = 0;
       setSessionCost(0);
       setDebugLogs([]);
@@ -448,17 +451,30 @@ export default function Home() {
           if (segments.length > 0) {
             const orig = segments.map(s => s.original).join(' ');
             const trans = segments.map(s => s.translated).join(' ');
-            saveSession({
-              id: crypto.randomUUID(),
-              createdAt: Date.now(),
-              sourceLanguage,
-              targetLanguage,
-              originalText: orig,
-              translatedText: trans,
-              sessionCost: sessionCostRef.current,
-              transcriptionProvider: settings.transcriptionProvider,
-              translationProvider: settings.translationProvider,
-            }).catch(() => {});
+            if (savedSessionTextRef.current !== orig) {
+              savedSessionTextRef.current = orig;
+              createTranscription({
+                title: orig.split(/[.!?]/)[0]?.trim().slice(0, 160) || 'Untitled transcription',
+                transcriptText: orig,
+                translatedText: trans,
+                language: sourceLanguage,
+                targetLanguage,
+                provider: settings.transcriptionProvider,
+              }).catch(() => {
+                // Keep the existing browser history usable when Supabase is not configured.
+                saveSession({
+                  id: crypto.randomUUID(),
+                  createdAt: Date.now(),
+                  sourceLanguage,
+                  targetLanguage,
+                  originalText: orig,
+                  translatedText: trans,
+                  sessionCost: sessionCostRef.current,
+                  transcriptionProvider: settings.transcriptionProvider,
+                  translationProvider: settings.translationProvider,
+                }).catch(() => {});
+              });
+            }
           }
         },
         onStreamReady: (stream: MediaStream) => {

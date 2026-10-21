@@ -7,12 +7,31 @@ import { setupChunkTranscriptionWebSocket } from './lib/chunk-transcription';
 import { setupListenerWebSockets } from './lib/listener-hub';
 import { initGlossary } from './lib/glossary-store';
 import { isLoopbackAddress } from './lib/loopback';
+import { getServerConfig } from './lib/config';
+import { authConfigurationError } from './lib/auth';
 
 if (!process.env.OPENAI_API_KEY) {
   console.warn("Warning: OPENAI_API_KEY is not set — translation will fail");
 }
 
 const app = express();
+const serverConfig = getServerConfig();
+const configurationError = authConfigurationError();
+if (configurationError) throw new Error(configurationError);
+
+if (serverConfig.frontendOrigin) {
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin === serverConfig.frontendOrigin) res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-voxora-owner');
+      return res.sendStatus(204);
+    }
+    next();
+  });
+}
 
 declare module 'http' {
   interface IncomingMessage {
@@ -165,7 +184,7 @@ try { initGlossary(); } catch (e) {
 
   // Serve the app on the port specified in the environment variable PORT
   // (defaults to 5001; see .env). This serves both the API and the client.
-  const port = parseInt(process.env.PORT || '5001', 10);
+  const port = serverConfig.port;
 
   function startServer(retries = 5, delayMs = 1000) {
     // Use `once` so each listen attempt registers exactly one error handler.

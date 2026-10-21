@@ -1,4 +1,4 @@
-import { Settings, Sun, Moon, BookOpenText, Mic } from 'lucide-react';
+import { Settings, Sun, Moon, BookOpenText, Mic, History, Waves, LogIn } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 
 interface HeaderProps {
@@ -15,11 +15,13 @@ export default function Header({ onThemeToggle, onSettingsOpen, isDark }: Header
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border">
       <div className="flex items-center justify-between h-12 px-4">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-primary" />
-          <h1 className="text-base font-semibold tracking-tight text-foreground">CTT.AY</h1>
-        </div>
+        <Link href="/" className="flex items-center gap-2" aria-label="Voxora home">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground"><Waves className="h-4 w-4" /></span>
+          <h1 className="text-base font-semibold tracking-tight text-foreground">Voxora</h1>
+        </Link>
         <div className="flex items-center gap-1">
+          <Link href="/history" className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label="Transcription history" title="Transcription history"><History className="h-4 w-4" /></Link>
+          <Link href="/auth" className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label="Sign in" title="Sign in"><LogIn className="h-4 w-4" /></Link>
           <Link
             href={inLiveMode ? '/' : '/live'}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground px-2.5 py-2 rounded-md transition-colors text-sm"

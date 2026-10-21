@@ -21,7 +21,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { dedupeOverlap, tail80 } from '../client/src/lib/sermon/overlap-dedupe';
-import { normalizeForScoring, parseAliases } from '../tests/lib/wer';
+import { normalizeForScoring, parseAliases } from './lib/wer';
 
 const RATE = 16_000;
 const ROOT = join(import.meta.dirname, '..');

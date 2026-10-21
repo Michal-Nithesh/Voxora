@@ -14,7 +14,7 @@
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { computeWER, countAsrArtifacts, normalizeForScoring, parseAliases } from '../tests/lib/wer';
+import { computeWER, countAsrArtifacts, normalizeForScoring, parseAliases } from './lib/wer';
 
 const RATE = 16_000;
 const WINDOW_SECS = 30;

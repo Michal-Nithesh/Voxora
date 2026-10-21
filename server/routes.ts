@@ -1,7 +1,6 @@
 import express from 'express';
 import type { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from 'http';
-import { storage } from './storage';
 import multer from 'multer';
 import {
   transcribeAudio,
@@ -26,6 +25,44 @@ import { join as joinPath } from 'path';
 import fs from 'fs';
 import os from 'os';
 import ffmpeg from 'fluent-ffmpeg';
+import { z } from 'zod';
+import { getServerConfig, hasDatabaseConfig } from './lib/config';
+import { DatabaseUnavailableError, transcriptionStore } from './lib/transcription-store';
+import { requireAuth, type AuthenticatedRequest } from './lib/auth';
+
+const transcriptionIdSchema = z.string().uuid();
+const ownerIdSchema = z.string().uuid();
+const createTranscriptionSchema = z.object({
+  title: z.string().trim().min(1).max(160).default('Untitled transcription'),
+  transcriptText: z.string().trim().min(1).max(1_000_000),
+  translatedText: z.string().max(1_000_000).optional(),
+  language: z.string().trim().min(2).max(20).default('en'),
+  targetLanguage: z.string().trim().min(2).max(20).default('en'),
+  provider: z.string().trim().min(1).max(40).default('unknown'),
+  durationSeconds: z.number().int().min(0).max(86_400).optional(),
+});
+const updateTranscriptionSchema = createTranscriptionSchema.partial().pick({
+  title: true,
+  transcriptText: true,
+  translatedText: true,
+});
+
+function getOwnerId(req: AuthenticatedRequest): string | null {
+  if (req.authUserId) return req.authUserId;
+  const config = getServerConfig();
+  if (process.env.NODE_ENV === 'production' || !config.allowAnonymousPersistence) return null;
+  const candidate = req.header('x-voxora-owner');
+  return candidate && ownerIdSchema.safeParse(candidate).success ? candidate : null;
+}
+
+function sendStoreError(res: Response, error: unknown): void {
+  if (error instanceof DatabaseUnavailableError) {
+    res.status(503).json({ error: 'Transcript persistence is not configured' });
+    return;
+  }
+  console.error('Transcript persistence error:', error);
+  res.status(500).json({ error: 'Transcript persistence failed' });
+}
 
 const upload = multer({
   dest: '/tmp/uploads/',
@@ -142,6 +179,93 @@ function parseGlossaryName(value: unknown, kind: 'csv' | 'md'): string | null | 
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  app.get('/health', (_req, res) => {
+    const config = getServerConfig();
+    res.json({
+      status: 'ok',
+      service: 'voxora-api',
+      databaseConfigured: hasDatabaseConfig(config),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.post('/api/transcriptions', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const ownerId = getOwnerId(req);
+    if (!ownerId) return res.status(401).json({ error: 'Authentication is required for transcript persistence' });
+    const parsed = createTranscriptionSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid transcription payload', issues: parsed.error.issues });
+    try {
+      const record = await transcriptionStore.create({ ownerId, ...parsed.data });
+      return res.status(201).json({ data: record });
+    } catch (error) {
+      sendStoreError(res, error);
+      return;
+    }
+  });
+
+  app.get('/api/transcriptions', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const ownerId = getOwnerId(req);
+    if (!ownerId) return res.status(401).json({ error: 'Authentication is required for transcript persistence' });
+    const page = Number.parseInt(String(req.query.page || '1'), 10);
+    const limit = Number.parseInt(String(req.query.limit || '10'), 10);
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 120) : undefined;
+    const language = typeof req.query.language === 'string' ? req.query.language.trim().slice(0, 20) : undefined;
+    if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ error: 'page must be positive and limit must be between 1 and 100' });
+    }
+    try {
+      const result = await transcriptionStore.list({ ownerId, page, limit, search, language });
+      return res.json({ data: result.records, pagination: { page, limit, total: result.total, pages: Math.ceil(result.total / limit) } });
+    } catch (error) {
+      sendStoreError(res, error);
+      return;
+    }
+  });
+
+  app.get('/api/transcriptions/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const ownerId = getOwnerId(req);
+    if (!ownerId) return res.status(401).json({ error: 'Authentication is required for transcript persistence' });
+    const id = transcriptionIdSchema.safeParse(req.params.id);
+    if (!id.success) return res.status(400).json({ error: 'Invalid transcription id' });
+    try {
+      const record = await transcriptionStore.get(id.data, ownerId);
+      return record ? res.json({ data: record }) : res.status(404).json({ error: 'Transcription not found' });
+    } catch (error) {
+      sendStoreError(res, error);
+      return;
+    }
+  });
+
+  app.put('/api/transcriptions/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const ownerId = getOwnerId(req);
+    if (!ownerId) return res.status(401).json({ error: 'Authentication is required for transcript persistence' });
+    const id = transcriptionIdSchema.safeParse(req.params.id);
+    const parsed = updateTranscriptionSchema.safeParse(req.body);
+    if (!id.success) return res.status(400).json({ error: 'Invalid transcription id' });
+    if (!parsed.success || Object.keys(parsed.data).length === 0) return res.status(400).json({ error: 'Invalid update payload', issues: parsed.success ? undefined : parsed.error.issues });
+    try {
+      const record = await transcriptionStore.update(id.data, ownerId, parsed.data);
+      return record ? res.json({ data: record }) : res.status(404).json({ error: 'Transcription not found' });
+    } catch (error) {
+      sendStoreError(res, error);
+      return;
+    }
+  });
+
+  app.delete('/api/transcriptions/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const ownerId = getOwnerId(req);
+    if (!ownerId) return res.status(401).json({ error: 'Authentication is required for transcript persistence' });
+    const id = transcriptionIdSchema.safeParse(req.params.id);
+    if (!id.success) return res.status(400).json({ error: 'Invalid transcription id' });
+    try {
+      const deleted = await transcriptionStore.delete(id.data, ownerId);
+      return deleted ? res.status(204).send() : res.status(404).json({ error: 'Transcription not found' });
+    } catch (error) {
+      sendStoreError(res, error);
+      return;
+    }
+  });
 
   // Legacy file-upload transcription endpoint (used by tests / direct API consumers)
   app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
