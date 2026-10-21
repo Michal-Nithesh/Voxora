@@ -4,7 +4,7 @@
   "description": "Your Voice. Instantly Understood.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#e0f7fa",
+  "background_color": "#111111",
   "theme_color": "#111111",
   "orientation": "portrait-primary",
   "icons": [

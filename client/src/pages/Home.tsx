@@ -460,6 +460,11 @@ export default function Home() {
                 language: sourceLanguage,
                 targetLanguage,
                 provider: settings.transcriptionProvider,
+              }).then(() => {
+                toast({
+                  title: 'Transcript saved to Cloud Archive',
+                  description: 'Available anytime in your History dashboard.',
+                });
               }).catch(() => {
                 // Keep the existing browser history usable when Supabase is not configured.
                 saveSession({
@@ -639,25 +644,27 @@ export default function Home() {
       <Collapsible open={isConfigOpen} onOpenChange={setIsConfigOpen}>
         <CollapsibleTrigger asChild>
           <button
-            className="w-full flex items-center gap-2 px-4 py-2.5 border-b border-border bg-background hover:bg-muted/30 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-3 border-b border-border/70 bg-card/30 hover:bg-muted/40 transition-colors text-left"
             data-testid="button-configure-toggle"
           >
-            {isRecording && (
-              <span className="flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-500 opacity-75" />
+            {isRecording ? (
+              <span className="flex h-2.5 w-2.5 shrink-0 relative items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
               </span>
+            ) : (
+              <span className="inline-flex h-2 w-2 rounded-full bg-primary/70 shrink-0" />
             )}
-            <span className="text-sm text-muted-foreground truncate">{configSummary}</span>
+            <span className="text-xs font-medium text-foreground tracking-wide truncate">{configSummary}</span>
             {sermonContext && (
               <>
                 <span className="text-muted-foreground/40 shrink-0">·</span>
-                <span className="text-sm text-muted-foreground/70 truncate italic">{sermonContext}</span>
+                <span className="text-xs text-muted-foreground/80 truncate italic">{sermonContext}</span>
               </>
             )}
             {isConfigOpen
-              ? <ChevronUp className="ml-auto shrink-0 h-4 w-4 text-muted-foreground/60" />
-              : <ChevronDown className="ml-auto shrink-0 h-4 w-4 text-muted-foreground/60" />
+              ? <ChevronUp className="ml-auto shrink-0 h-4 w-4 text-muted-foreground" />
+              : <ChevronDown className="ml-auto shrink-0 h-4 w-4 text-muted-foreground" />
             }
           </button>
         </CollapsibleTrigger>
@@ -954,25 +961,30 @@ export default function Home() {
 
       {/* ── Fixed bottom action bar ───────────────────────────────────────── */}
       <div
-        className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-sm px-6 pt-4"
+        className="fixed bottom-0 left-0 right-0 border-t border-border/80 bg-background/90 backdrop-blur-md px-6 pt-3.5 z-20"
         style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
       >
-        <div className="flex items-center justify-between max-w-sm mx-auto">
-          <div className="w-20">
-            {quality.level > 0 && (
-              <div className="flex items-end gap-0.5 h-5">
+        <div className="flex items-center justify-between max-w-md mx-auto">
+          {/* Level visualizer */}
+          <div className="w-24">
+            {quality.level > 0 ? (
+              <div className="flex items-end gap-1 h-6 p-1 rounded-md bg-muted/40 border border-border/40">
                 {Array.from({ length: 8 }, (_, i) => (
                   <div
                     key={i}
-                    className={`w-1.5 rounded-sm transition-all duration-100 ${
+                    className={`flex-1 rounded-xs transition-all duration-100 ${
                       i / 8 < quality.level
                         ? quality.isClipping ? 'bg-red-500' : i / 8 > 0.7 ? 'bg-yellow-400' : 'bg-green-500'
-                        : 'bg-muted'
+                        : 'bg-muted-foreground/20'
                     }`}
-                    style={{ height: `${((i + 1) / 8) * 100}%` }}
+                    style={{ height: `${Math.max(15, ((i + 1) / 8) * 100)}%` }}
                   />
                 ))}
               </div>
+            ) : (
+              <span className="text-[11px] text-muted-foreground/60 block pl-1">
+                {isRecording ? 'Listening...' : 'Ready'}
+              </span>
             )}
           </div>
 
@@ -982,32 +994,33 @@ export default function Home() {
             onClick={isRecording ? stopRecording : startRecording}
           />
 
-          <div className="w-20 flex flex-col items-end gap-1">
-            <div className="flex items-center gap-1">
+          <div className="w-24 flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1.5">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setIsExportDialogOpen(true)}
                 disabled={!originalText && !translatedText}
                 data-testid="button-export"
-                className="text-muted-foreground hover:text-foreground gap-1.5"
+                className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5 px-2.5"
               >
-                <Download className="h-4 w-4" />
-                Export
+                <Download className="h-3.5 w-3.5" />
+                <span>Export</span>
               </Button>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
                 onClick={() => setIsHistoryOpen(true)}
-                className="h-8 w-8"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 aria-label="Session history"
                 data-testid="button-history"
+                title="Local Session History"
               >
-                <History className="h-4 w-4" />
+                <History className="h-3.5 w-3.5" />
               </Button>
             </div>
             {sessionCost >= 0.001 && (
-              <span className="text-xs text-muted-foreground/50">~${sessionCost.toFixed(3)}</span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">~${sessionCost.toFixed(3)}</span>
             )}
           </div>
         </div>

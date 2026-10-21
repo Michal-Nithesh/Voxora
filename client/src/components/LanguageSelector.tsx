@@ -1,4 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Globe } from "lucide-react";
 
 interface LanguageSelectorProps {
   value: string;
@@ -44,27 +45,28 @@ export default function LanguageSelector({
   testId = "select-language"
 }: LanguageSelectorProps) {
   return (
-    <div className="space-y-2">
-      <label htmlFor="language-select" className="text-sm font-medium text-foreground">
+    <div className="space-y-1.5">
+      <label htmlFor="language-select" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </label>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger 
           id="language-select"
-          className="h-12 w-full"
+          className="h-11 w-full rounded-lg border-border/80 bg-background/60 shadow-2xs transition-all hover:border-primary/50"
           data-testid={testId}
         >
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-            </svg>
+            <Globe className="h-4 w-4 text-primary shrink-0" />
             <SelectValue placeholder="Select language" />
           </div>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-72">
           {LANGUAGES.map((lang) => (
-            <SelectItem key={lang.code} value={lang.code}>
-              {lang.name}
+            <SelectItem key={lang.code} value={lang.code} className="cursor-pointer">
+              <span className="flex items-center justify-between w-full gap-3">
+                <span>{lang.name}</span>
+                <span className="text-[10px] uppercase font-mono text-muted-foreground">{lang.code}</span>
+              </span>
             </SelectItem>
           ))}
         </SelectContent>

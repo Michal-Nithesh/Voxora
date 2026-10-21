@@ -193,35 +193,50 @@ export default function ListenerMode() {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-sm font-medium text-muted-foreground">Live translation</span>
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border/80 bg-background/90 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <img
+            src="/voxora.png"
+            alt="Voxora"
+            className="h-6 w-6 object-contain"
+          />
+          <span className="text-sm font-semibold tracking-tight text-foreground">Voxora</span>
+          <span className="text-xs text-muted-foreground/60">·</span>
+          <span className="text-xs font-medium text-muted-foreground">Listener Stream</span>
+        </div>
+
+        <div className="flex items-center gap-2.5">
           <span
-            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              connection === 'connected'
+                ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
+            }`}
             aria-live="polite"
           >
             {connection === 'connected' ? (
               <>
-                <Wifi className="w-3.5 h-3.5" />
-                Connected
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                Live
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5 animate-pulse" />
+                <WifiOff className="w-3 h-3 animate-pulse" />
                 {connection === 'connecting' ? 'Connecting…' : 'Reconnecting…'}
               </>
             )}
           </span>
+
           {/* A full reload, not just a reconnect: it also picks up a newer
               version of this page after the operator restarted the app. */}
           <button
             onClick={() => window.location.reload()}
             aria-label="Refresh"
             data-testid="button-refresh"
-            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground"
+            className="flex items-center gap-1 rounded-full border border-border/80 bg-accent/30 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Refresh
+            <RefreshCw className="w-3 h-3" />
+            <span>Refresh</span>
           </button>
         </div>
       </header>

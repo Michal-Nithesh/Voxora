@@ -38,14 +38,14 @@ function ToggleChip({ on, onClick, icon, label, title, testId }: {
       title={title}
       data-testid={testId}
       className={
-        'inline-flex items-center gap-1.5 h-8 rounded-full border px-3 text-xs font-medium transition-colors ' +
+        'inline-flex items-center gap-1.5 h-8 rounded-full border px-3 text-xs font-medium transition-all ' +
         (on
-          ? 'border-green-600/40 bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20'
-          : 'border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/25')
+          ? 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20'
+          : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20')
       }
     >
       {icon}
-      {label}
+      <span>{label}</span>
     </button>
   );
 }
@@ -59,21 +59,24 @@ export default function SermonToolbar({
   const [isListenerPopoverOpen, setIsListenerPopoverOpen] = useState(false);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 px-3 py-2 border-b border-border bg-background">
+    <div className="flex flex-wrap items-center gap-2.5 px-3 py-2 border-b border-border/80 bg-background/95 backdrop-blur-xs">
       <button
         onClick={onToggleRecording}
         disabled={isProcessing && !isRecording}
         data-testid="button-sermon-record"
         aria-label={isRecording ? 'Stop recording' : 'Start recording'}
         className={
-          'inline-flex items-center justify-center h-9 w-9 rounded-full transition-colors ' +
-          (isRecording ? 'bg-red-600 text-white' : 'bg-primary text-primary-foreground hover:opacity-90') +
+          'relative inline-flex items-center justify-center h-9 w-9 rounded-full transition-all duration-200 ' +
+          (isRecording
+            ? 'bg-red-600 text-white shadow-md shadow-red-600/35 hover:bg-red-700'
+            : 'bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:opacity-95 hover:scale-105') +
           ' disabled:opacity-40 disabled:cursor-not-allowed'
         }
       >
+        {isRecording && <span className="absolute -inset-1 rounded-full bg-red-500/25 animate-ping" />}
         {isProcessing && !isRecording
           ? <Loader2 className="h-4 w-4 animate-spin" />
-          : isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
+          : isRecording ? <Square className="h-3.5 w-3.5 fill-current z-10" /> : <Mic className="h-4 w-4 z-10" />}
       </button>
 
       {isRecording && (
@@ -84,7 +87,7 @@ export default function SermonToolbar({
           title={isPaused ? 'Resume recording' : 'Pause recording'}
           className={
             'inline-flex items-center justify-center h-9 w-9 rounded-full border transition-colors ' +
-            (isPaused ? 'bg-amber-500 border-amber-500 text-white' : 'border-input bg-background text-foreground hover:bg-accent')
+            (isPaused ? 'bg-amber-500 border-amber-500 text-white shadow-xs' : 'border-border bg-background text-foreground hover:bg-accent')
           }
         >
           {isPaused ? <Play className="h-3.5 w-3.5 fill-current" /> : <Pause className="h-3.5 w-3.5 fill-current" />}
@@ -97,10 +100,11 @@ export default function SermonToolbar({
         onClick={onRefreshAll}
         disabled={dirtyCount === 0}
         data-testid="button-refresh-all"
+        className="h-8 gap-1.5 text-xs rounded-lg"
         title={`Re-translate all changed segments (${refreshHint})`}
       >
-        <RefreshCw className="w-3.5 h-3.5" />
-        Refresh {dirtyCount > 0 && `(${dirtyCount})`}
+        <RefreshCw className={`w-3.5 h-3.5 ${dirtyCount > 0 ? 'text-primary' : ''}`} />
+        <span>Refresh {dirtyCount > 0 && `(${dirtyCount})`}</span>
         <kbd className="ml-1 hidden sm:inline text-[10px] text-muted-foreground border rounded px-1 py-0.5">{refreshHint}</kbd>
       </Button>
 

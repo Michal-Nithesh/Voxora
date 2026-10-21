@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, FileText, Languages } from 'lucide-react';
 
 interface TranscriptionDisplayProps {
   title: string;
@@ -33,12 +33,10 @@ function useTypewriter(text: string, active: boolean): string {
     if (text === prev) return;
 
     if (!text.startsWith(prev)) {
-      // Retranslation or reset — snap immediately
       setDisplayed(text);
       return;
     }
 
-    // Extension of existing text — animate new words word-by-word
     const newPart = text.slice(prev.length);
     const words = newPart.match(/\S+\s*/g) ?? [];
     if (words.length === 0) {
@@ -96,35 +94,73 @@ export default function TranscriptionDisplay({
     }
   }, [visibleText]);
 
+  const wordCount = visibleText.trim() ? visibleText.trim().split(/\s+/).length : 0;
+  const isTranslation = title.toLowerCase().includes('translation');
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="text-xs font-medium text-muted-foreground mb-2 px-6 pt-4 flex items-center justify-between">
-        <span>{title}</span>
+    <div className="flex flex-col h-full rounded-xl border border-border/70 bg-card/70 shadow-2xs backdrop-blur-xs overflow-hidden">
+      {/* Pane Header */}
+      <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          {isTranslation ? (
+            <Languages className="h-4 w-4 text-primary" />
+          ) : (
+            <FileText className="h-4 w-4 text-primary" />
+          )}
+          <span className="text-xs font-semibold uppercase tracking-wider text-foreground">{title}</span>
+          {wordCount > 0 && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {wordCount} {wordCount === 1 ? 'word' : 'words'}
+            </span>
+          )}
+        </div>
+
         {text && (
           <button
             onClick={handleCopy}
-            className="p-1 rounded text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             aria-label="Copy to clipboard"
+            title="Copy text"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-green-500" />
+                <span className="text-green-500">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy</span>
+              </>
+            )}
           </button>
         )}
       </div>
+
+      {/* Pane Content */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-thin"
+        className="flex-1 overflow-y-auto p-5 scrollbar-thin"
         data-testid={testId}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {visibleText ? (
-          <p className={`text-lg leading-relaxed whitespace-pre-wrap ${isPartial ? 'text-muted-foreground' : 'text-foreground'}`}>
+          <p
+            className={`text-lg leading-relaxed whitespace-pre-wrap transition-opacity ${
+              isPartial ? 'text-muted-foreground' : 'text-foreground'
+            }`}
+          >
             {visibleText}
-            {isPartial && <span className="inline-block w-2 h-5 bg-primary ml-1 animate-pulse" />}
+            {isPartial && <span className="inline-block w-2 h-5 bg-primary ml-1 animate-pulse align-middle" />}
           </p>
         ) : (
-          <p className="text-base leading-relaxed text-muted-foreground italic">
-            {title === 'Original' ? 'Transcription will appear here...' : 'Translation will appear here...'}
-          </p>
+          <div className="flex h-full min-h-[140px] items-center justify-center text-center">
+            <p className="text-sm text-muted-foreground/70 italic">
+              {title === 'Original'
+                ? 'Speak into your microphone — transcription will stream here...'
+                : 'Real-time AI translation will appear here...'}
+            </p>
+          </div>
         )}
       </div>
     </div>
