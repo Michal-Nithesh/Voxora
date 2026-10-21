@@ -10,7 +10,7 @@ import type { SettingsPageProps } from './types';
 
 export function LiveTranslationPage({ settings, onUpdate }: SettingsPageProps) {
   const hasOpenAIKey = settings.openaiApiKey.length > 0;
-  const hasAnthropicKey = settings.anthropicApiKey.length > 0;
+  const hasGeminiKey = settings.geminiApiKey.length > 0;
 
   return (
     <div className="space-y-6">
@@ -32,13 +32,13 @@ export function LiveTranslationPage({ settings, onUpdate }: SettingsPageProps) {
             warning={!hasOpenAIKey && <Warning>Enter an OpenAI API key under API keys to enable.</Warning>}
           />
           <RadioOption
-            value="claude"
-            id="tr-claude"
-            title="Claude Haiku (Anthropic)"
+            value="gemini"
+            id="tr-gemini"
+            title="Google Gemini (Flash Lite)"
             tag="online"
-            disabled={!hasAnthropicKey}
-            description="Excellent translation quality."
-            warning={!hasAnthropicKey && <Warning>Enter an Anthropic API key under API keys to enable.</Warning>}
+            disabled={!hasGeminiKey}
+            description="Ultra-fast, accurate translation powered by Google Gemini."
+            warning={!hasGeminiKey && <Warning>Enter a Gemini API key under API keys to enable.</Warning>}
           />
           <RadioOption
             value="ollama"
@@ -76,7 +76,7 @@ export function LiveTranslationPage({ settings, onUpdate }: SettingsPageProps) {
 
 export function LiveImprovePage({ settings, onUpdate }: SettingsPageProps) {
   const hasOpenAIKey = settings.openaiApiKey.length > 0;
-  const hasAnthropicKey = settings.anthropicApiKey.length > 0;
+  const hasGeminiKey = settings.geminiApiKey.length > 0;
 
   return (
     <div className="space-y-6">
@@ -102,12 +102,12 @@ export function LiveImprovePage({ settings, onUpdate }: SettingsPageProps) {
             warning={!hasOpenAIKey && <Warning>Enter an OpenAI API key under API keys to enable.</Warning>}
           />
           <RadioOption
-            value="claude"
-            id="imp-claude"
-            title="Claude Haiku (Anthropic)"
-            disabled={!hasAnthropicKey}
-            description="High-quality correction and theological term handling."
-            warning={!hasAnthropicKey && <Warning>Enter an Anthropic API key under API keys to enable.</Warning>}
+            value="gemini"
+            id="imp-gemini"
+            title="Google Gemini"
+            disabled={!hasGeminiKey}
+            description="High-quality correction, spelling and theological term handling via Gemini."
+            warning={!hasGeminiKey && <Warning>Enter a Gemini API key under API keys to enable.</Warning>}
           />
         </RadioGroup>
       </SettingItem>

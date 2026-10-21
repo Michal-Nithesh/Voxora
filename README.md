@@ -38,7 +38,7 @@ flowchart LR
   WS[Express WebSockets]
   API[Express REST API]
   ASR[AssemblyAI / Whisper / MLX / Web Speech / Transformers.js]
-  LLM[OpenAI / Claude / Ollama]
+  LLM[OpenAI / Gemini / Ollama]
   DB[(Supabase PostgreSQL)]
 
   Browser --> Audio
@@ -53,7 +53,7 @@ flowchart LR
 ### Data Flow
 1. **Audio Capture**: The browser records raw audio through `AudioContext` and streams chunks over Express WebSockets (`/ws/transcribe` or `/ws/chunk-transcribe`).
 2. **ASR (Speech Recognition)**: The server routes audio to the configured engine (AssemblyAI Streaming, OpenAI Whisper, Apple Silicon MLX Whisper, or client-side Web Speech / Transformers.js).
-3. **Translation & Correction**: Raw speech is processed through LLM providers (OpenAI GPT-4o-mini, Anthropic Claude Haiku, or local Ollama) with glossary reinforcement.
+3. **Translation & Correction**: Raw speech is processed through LLM providers (OpenAI GPT-4o-mini, Google Gemini, or local Ollama) with glossary reinforcement.
 4. **Broadcast & UI**: Final and provisional text streams back to the UI in real time and broadcasts to mobile listeners (`/listen`).
 5. **Persistence**: Finalized transcripts are stored in Supabase PostgreSQL via authenticated Express endpoints.
 
@@ -128,18 +128,12 @@ cp .env.example .env
 |---|---|---|
 | `PORT` | No | Server port (default: `5001`). |
 | `FRONTEND_ORIGIN` | No | Allowed origin for CORS (e.g. `http://localhost:5001`). |
-| `VITE_SUPABASE_URL` | Yes (Frontend) | Public Supabase project URL (`https://your-id.supabase.co`). |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes (Frontend) | Supabase anon/publishable key. |
-| `SUPABASE_URL` | Yes (Backend) | Server-side Supabase project URL. |
+| `SUPABASE_URL` | Yes (Backend) | Server-side Supabase project URL (`https://your-id.supabase.co`). |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes (Backend) | Server-only Supabase service-role secret key. |
-| `SUPABASE_JWT_SECRET` | Optional | Shared JWT secret for HS256 validation (falls back to remote JWKS). |
-| `ALLOW_ANONYMOUS_PERSISTENCE` | Dev Only | Set to `true` to allow anonymous testing via `x-voxora-owner` header. Rejected in production. |
-| `OPENAI_API_KEY` | Optional | Required for OpenAI Whisper transcription & GPT translation. |
+| `ALLOW_ANONYMOUS_PERSISTENCE` | Dev Only | Set to `true` to allow anonymous testing in local development. |
+| `OPENAI_API_KEY` | Optional | Required for OpenAI Whisper transcription & GPT-4o-mini translation. |
 | `ASSEMBLYAI_API_KEY` | Optional | Required for real-time AssemblyAI streaming. |
-| `ANTHROPIC_API_KEY` | Optional | Required for Claude translation provider. |
-| `MLX_PYTHON` | Optional | Python interpreter path for local MLX Whisper (Apple Silicon). |
-| `GLOSSARY_DIR` | Optional | Path to sermon glossary files (default: `./data`). |
-| `ESV_API_KEY` | Optional | API key for ESV Bible verse retrieval. |
+| `GEMINI_API_KEY` | Optional | Required for Google Gemini (Flash Lite) translation & improvement. |
 
 ---
 

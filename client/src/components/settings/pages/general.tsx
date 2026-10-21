@@ -25,8 +25,7 @@ import type { SettingsPageProps } from './types';
 
 export function ApiKeysPage({ settings, onUpdate }: SettingsPageProps) {
   const openai = getItem('openai-key');
-  const anthropic = getItem('anthropic-key');
-  const esv = getItem('esv-key');
+  const gemini = getItem('gemini-key');
   return (
     <div className="space-y-6">
       <PageHeader pageId="api-keys" />
@@ -44,24 +43,13 @@ export function ApiKeysPage({ settings, onUpdate }: SettingsPageProps) {
           keyPrefix="sk-"
         />
       </div>
-      <div id="setting-anthropic-key" className="rounded-md p-1 -m-1 transition-shadow">
+      <div id="setting-gemini-key" className="rounded-md p-1 -m-1 transition-shadow">
         <ApiKeyField
-          label={anthropic.label}
-          placeholder="sk-ant-..."
-          description={anthropic.description}
-          value={settings.anthropicApiKey}
-          onChange={(v) => onUpdate({ anthropicApiKey: v })}
-          keyPrefix="sk-ant-"
-        />
-      </div>
-      <div id="setting-esv-key" className="rounded-md p-1 -m-1 transition-shadow">
-        <ApiKeyField
-          label={esv.label}
-          placeholder="Your ESV API key"
-          description={esv.description}
-          value={settings.esvApiKey}
-          onChange={(v) => onUpdate({ esvApiKey: v })}
-          badge={<ModeBadge scope="sermon" />}
+          label={gemini.label}
+          placeholder="AIzaSy... or AQ...."
+          description={gemini.description}
+          value={settings.geminiApiKey}
+          onChange={(v) => onUpdate({ geminiApiKey: v })}
         />
       </div>
     </div>

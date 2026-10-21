@@ -73,8 +73,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
 export const SETTINGS_ITEMS: SettingsItem[] = [
   // ── API keys ──
   { id: 'openai-key', page: 'api-keys', label: 'OpenAI API key', description: 'Needed for OpenAI Whisper transcription and GPT-4o-mini correction/translation. Stored only in this browser tab.', keywords: ['openai', 'gpt', 'whisper', 'sk-', 'token', 'secret'] },
-  { id: 'anthropic-key', page: 'api-keys', label: 'Anthropic API key', description: 'Needed for Claude Haiku correction/translation. Stored only in this browser tab.', keywords: ['anthropic', 'claude', 'haiku', 'token', 'secret'] },
-  { id: 'esv-key', page: 'api-keys', label: 'ESV API key', description: 'Only needed when the local ESV text has not been built. Without text or key, quotes fall back to the King James Version.', keywords: ['esv', 'bible', 'crossway', 'scripture', 'token'], scope: 'sermon' },
+  { id: 'gemini-key', page: 'api-keys', label: 'Google Gemini API key', description: 'Needed for Google Gemini correction and translation. Stored only in this browser tab.', keywords: ['gemini', 'google', 'flash', 'token', 'secret'] },
 
   // ── Languages ──
   { id: 'source-language', page: 'languages', label: 'Speaking in', description: 'The language being spoken. Pre-selected when the app opens.', keywords: ['source', 'input', 'dutch', 'nl'] },
@@ -104,11 +103,11 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 
   // ── Sermon: correction ──
   { id: 'sermon-asr-correction', page: 'sermon-correction', label: 'Correct each chunk', description: 'Let a language model clean up every transcribed chunk (punctuation, wrong words). Off = use Whisper\'s text as is: faster, but glossary words are not fixed. This step runs while recording and can slow transcription down.', keywords: ['asr', 'correction', 'chunk', 'clean', 'punctuation', 'fragment', 'speed', 'slow'] },
-  { id: 'sermon-correction-provider', page: 'sermon-correction', label: 'Correction provider', description: 'Which model corrects each chunk. Never translates. A local Ollama model shares the GPU with Whisper.', keywords: ['correction', 'provider', 'openai', 'claude', 'ollama', 'gpt', 'haiku', 'model'] },
+  { id: 'sermon-correction-provider', page: 'sermon-correction', label: 'Correction provider', description: 'Which model corrects each chunk. Never translates. A local Ollama model shares the GPU with Whisper.', keywords: ['correction', 'provider', 'openai', 'gemini', 'ollama', 'gpt', 'model'] },
 
   // ── Sermon: translation ──
-  { id: 'sermon-translation-provider', page: 'sermon-translation', label: 'Translation provider', description: 'Which model translates finished segments. Also applies the glossary and Bible-quote handling. Runs after transcription, so it does not slow audio down.', keywords: ['translate', 'provider', 'openai', 'claude', 'ollama', 'gpt', 'haiku', 'model', 'vertaal'] },
-  { id: 'sermon-model', page: 'sermon-translation', label: 'OpenAI model', description: 'Model name used when the provider is OpenAI. Claude always uses Haiku; Ollama uses the model set under Local models.', keywords: ['model', 'gpt-4o-mini', 'openai', 'name'] },
+  { id: 'sermon-translation-provider', page: 'sermon-translation', label: 'Translation provider', description: 'Which model translates finished segments. Also applies the glossary and Bible-quote handling. Runs after transcription, so it does not slow audio down.', keywords: ['translate', 'provider', 'openai', 'gemini', 'ollama', 'gpt', 'model', 'vertaal'] },
+  { id: 'sermon-model', page: 'sermon-translation', label: 'OpenAI model', description: 'Model name used when the provider is OpenAI. Gemini uses Gemini 3.5 Flash Lite; Ollama uses the model set under Local models.', keywords: ['model', 'gpt-4o-mini', 'openai', 'name'] },
   { id: 'sermon-auto-translate', page: 'sermon-translation', label: 'Auto-translate', description: 'Translate new sentences as soon as they are stable. The Refresh button always works, even when this is off.', keywords: ['automatic', 'refresh', 'stable', 'automatisch'] },
   { id: 'sermon-context', page: 'sermon-translation', label: 'Context sentences', description: 'How many neighbouring segments are sent along as context: before (0–5) and after (0–3).', keywords: ['context', 'before', 'after', 'neighbours', 'surrounding'] },
 
@@ -125,10 +124,10 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'listener-address', page: 'sermon-listeners', label: 'Listener address', description: 'Give this address to listeners on the same Wi-Fi so they can follow the English translation on their phone. Look it up again after joining a different network.', keywords: ['ip', 'lan', 'wifi', 'phone', 'listen', 'url', 'address', 'luisteraars', 'network'] },
 
   // ── Live: translation ──
-  { id: 'live-translation-provider', page: 'live-translation', label: 'Translation provider', description: 'Corrects and translates each live chunk. "None" shows the raw transcription only. This does not affect Sermon mode.', keywords: ['translate', 'correction', 'openai', 'claude', 'ollama', 'none', 'provider', 'subtitle'] },
+  { id: 'live-translation-provider', page: 'live-translation', label: 'Translation provider', description: 'Corrects and translates each live chunk. "None" shows the raw transcription only. This does not affect Sermon mode.', keywords: ['translate', 'correction', 'openai', 'gemini', 'ollama', 'none', 'provider', 'subtitle'] },
 
   // ── Live: improve ──
-  { id: 'improve-provider', page: 'live-improve', label: 'Improve provider', description: 'Model used by the Improve button to fix spelling, punctuation and theological terms.', keywords: ['improve', 'correction', 'openai', 'claude', 'provider', 'retroactive'] },
+  { id: 'improve-provider', page: 'live-improve', label: 'Improve provider', description: 'Model used by the Improve button to fix spelling, punctuation and theological terms.', keywords: ['improve', 'correction', 'openai', 'gemini', 'provider', 'retroactive'] },
   { id: 'improve-chars', page: 'live-improve', label: 'Default characters to improve', description: 'How many trailing characters the Improve button re-processes (minimum 100).', keywords: ['lookback', 'chars', 'characters', 'improve', 'length'] },
 
   // ── Live: audio ──

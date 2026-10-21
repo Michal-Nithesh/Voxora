@@ -8,6 +8,7 @@ import {
   retroactiveCorrection,
   formatForExport,
 } from './lib/openai';
+import { correctAndTranslateWithGemini, retroactiveCorrectionWithGemini, isConfiguredGeminiKey } from './lib/gemini';
 import { correctAndTranslateWithClaude, retroactiveCorrectionWithClaude } from './lib/anthropic';
 import { correctAndTranslateWithOllama, retroactiveCorrectionWithOllama, isValidOllamaBaseUrl } from './lib/ollama';
 import { transcribeWithMlx } from './lib/mlx-whisper';
@@ -69,8 +70,8 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-const VALID_TRANSLATION_PROVIDERS = new Set(['openai', 'claude', 'ollama', 'none']);
-type TranslationProvider = 'openai' | 'claude' | 'ollama' | 'none';
+const VALID_TRANSLATION_PROVIDERS = new Set(['openai', 'gemini', 'claude', 'ollama', 'none']);
+type TranslationProvider = 'openai' | 'gemini' | 'claude' | 'ollama' | 'none';
 
 // Simple per-IP rate limiter: 60 requests per minute on translation endpoints.
 interface RateBucket { count: number; resetAt: number }
@@ -106,14 +107,14 @@ async function runCorrectAndTranslate(
   detectSpeakers: boolean,
   provider: TranslationProvider,
   openaiApiKey?: string,
-  anthropicApiKey?: string,
+  geminiApiKey?: string,
   glossary?: string,
   sermonContext?: string,
   ollamaModel?: string,
   ollamaBaseUrl?: string,
 ): Promise<{ correctedText: string; translatedText: string }> {
-  if (provider === 'claude') {
-    return correctAndTranslateWithClaude(text, targetLanguage, detectSpeakers, anthropicApiKey || '', glossary, sermonContext);
+  if (provider === 'gemini' || provider === 'claude') {
+    return correctAndTranslateWithGemini(text, targetLanguage, detectSpeakers, geminiApiKey, glossary, sermonContext);
   }
   if (provider === 'ollama') {
     return correctAndTranslateWithOllama(text, targetLanguage, detectSpeakers, ollamaModel || 'qwen3.6:latest', ollamaBaseUrl || 'http://localhost:11434', glossary, sermonContext);
@@ -130,14 +131,14 @@ async function runRetroactiveCorrection(
   detectSpeakers: boolean,
   provider: TranslationProvider,
   openaiApiKey?: string,
-  anthropicApiKey?: string,
+  geminiApiKey?: string,
   glossary?: string,
   sermonContext?: string,
   ollamaModel?: string,
   ollamaBaseUrl?: string,
 ): Promise<{ correctedText: string; translatedText: string }> {
-  if (provider === 'claude') {
-    return retroactiveCorrectionWithClaude(accumulatedText, targetLanguage, detectSpeakers, anthropicApiKey || '', glossary, sermonContext);
+  if (provider === 'gemini' || provider === 'claude') {
+    return retroactiveCorrectionWithGemini(accumulatedText, targetLanguage, detectSpeakers, geminiApiKey, glossary, sermonContext);
   }
   if (provider === 'ollama') {
     return retroactiveCorrectionWithOllama(accumulatedText, targetLanguage, detectSpeakers, ollamaModel || 'qwen3.6:latest', ollamaBaseUrl || 'http://localhost:11434', glossary, sermonContext);
@@ -166,7 +167,7 @@ function parseProvider(value: unknown): TranslationProvider | null {
 
 // Sermon mode never accepts 'none' — a correction/translation call is always
 // required (see client/src/hooks/useSettings.ts's SermonTranslationProvider).
-const VALID_SERMON_TRANSLATION_PROVIDERS = new Set(['openai', 'claude', 'ollama']);
+const VALID_SERMON_TRANSLATION_PROVIDERS = new Set(['openai', 'gemini', 'claude', 'ollama']);
 const VALID_BIBLE_VERSIONS = new Set(['KJV', 'ESV', 'LSB', 'NASB', 'NKJV']);
 // null = absent (caller should fall back to the server default selection);
 // 'invalid' = present but structurally unsafe — the caller must 400. Kept
@@ -282,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const detectSpeakers = req.body.detectSpeakers === 'true';
       const provider = parseProvider(req.body.translationProvider) ?? 'openai';
       const openaiApiKey = req.body.openaiApiKey || undefined;
-      const anthropicApiKey = req.body.anthropicApiKey || undefined;
+      const geminiApiKey = req.body.geminiApiKey || req.body.anthropicApiKey || undefined;
       const previousTranscript = typeof req.body.previousTranscript === 'string' ? req.body.previousTranscript : undefined;
       // Optional: route transcription to the local MLX engine instead of OpenAI Whisper.
       // Used by the WER benchmark harness to compare engines on the same fixtures.
@@ -337,7 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { correctedText, translatedText } = !cleanedTranscript
         ? { correctedText: '', translatedText: '' }
         : await runCorrectAndTranslate(
-          cleanedTranscript, targetLanguage, detectSpeakers, provider, openaiApiKey, anthropicApiKey,
+          cleanedTranscript, targetLanguage, detectSpeakers, provider, openaiApiKey, geminiApiKey,
         );
 
       if (webmFilePath && fs.existsSync(webmFilePath)) fs.unlinkSync(webmFilePath);
@@ -359,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Text-only translation — used by browser SpeechRecognition mode and re-translation
   app.post('/api/translate', rateLimiter, async (req, res) => {
     try {
-      const { text, targetLanguage, detectSpeakers, translationProvider, openaiApiKey, anthropicApiKey, glossary, sermonContext, ollamaModel, ollamaBaseUrl } = req.body;
+      const { text, targetLanguage, detectSpeakers, translationProvider, openaiApiKey, geminiApiKey, anthropicApiKey, glossary, sermonContext, ollamaModel, ollamaBaseUrl } = req.body;
 
       if (!text) return res.status(400).json({ error: 'No text provided' });
 
@@ -373,7 +374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         detectSpeakers ?? false,
         provider,
         openaiApiKey || undefined,
-        anthropicApiKey || undefined,
+        geminiApiKey || anthropicApiKey || undefined,
         glossary || undefined,
         sermonContext || undefined,
         ollamaModel || undefined,
@@ -392,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/retranslate', rateLimiter, async (req, res) => {
     try {
-      const { originalText, targetLanguage, detectSpeakers, translationProvider, openaiApiKey, anthropicApiKey, glossary, sermonContext, ollamaModel, ollamaBaseUrl } = req.body;
+      const { originalText, targetLanguage, detectSpeakers, translationProvider, openaiApiKey, geminiApiKey, anthropicApiKey, glossary, sermonContext, ollamaModel, ollamaBaseUrl } = req.body;
 
       if (!originalText) return res.status(400).json({ error: 'No text provided' });
 
@@ -406,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         detectSpeakers ?? false,
         provider,
         openaiApiKey || undefined,
-        anthropicApiKey || undefined,
+        geminiApiKey || anthropicApiKey || undefined,
         glossary || undefined,
         sermonContext || undefined,
         ollamaModel || undefined,
@@ -425,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/retroactive-correct', rateLimiter, async (req, res) => {
     try {
-      const { accumulatedText, targetLanguage, detectSpeakers, translationProvider, openaiApiKey, anthropicApiKey, glossary, sermonContext, ollamaModel, ollamaBaseUrl } = req.body;
+      const { accumulatedText, targetLanguage, detectSpeakers, translationProvider, openaiApiKey, geminiApiKey, anthropicApiKey, glossary, sermonContext, ollamaModel, ollamaBaseUrl } = req.body;
 
       if (!accumulatedText) return res.status(400).json({ error: 'No text provided' });
 
@@ -439,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         detectSpeakers ?? false,
         provider,
         openaiApiKey || undefined,
-        anthropicApiKey || undefined,
+        geminiApiKey || anthropicApiKey || undefined,
         glossary || undefined,
         sermonContext || undefined,
         ollamaModel || undefined,
@@ -465,14 +466,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const {
         targetLanguage, translationProvider, model,
-        openaiApiKey, anthropicApiKey, ollamaBaseUrl, ollamaModel,
+        openaiApiKey, geminiApiKey, anthropicApiKey, ollamaBaseUrl, ollamaModel,
         glossary, items,
         glossaryCsv, disambiguationPrompt, bibleVersion, deityCapitals, glossaryWarnings,
         scriptureEnabled, esvApiKey, scriptureFallback,
       } = req.body;
 
       if (typeof translationProvider !== 'string' || !VALID_SERMON_TRANSLATION_PROVIDERS.has(translationProvider)) {
-        return res.status(400).json({ error: 'Invalid translationProvider — must be openai, claude, or ollama' });
+        return res.status(400).json({ error: 'Invalid translationProvider — must be openai, gemini, claude, or ollama' });
       }
       if (isBadOllamaBaseUrl(ollamaBaseUrl)) {
         return res.status(400).json({ error: 'Invalid ollamaBaseUrl' });
@@ -514,7 +515,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         translationProvider: translationProvider as SermonTranslationProvider,
         model: model || undefined,
         openaiApiKey: openaiApiKey || undefined,
-        anthropicApiKey: anthropicApiKey || undefined,
+        geminiApiKey: geminiApiKey || anthropicApiKey || undefined,
+        anthropicApiKey: geminiApiKey || anthropicApiKey || undefined,
         ollamaBaseUrl: ollamaBaseUrl || undefined,
         ollamaModel: ollamaModel || undefined,
         glossaryOverride: glossary || undefined,
@@ -702,11 +704,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!isLoopback) {
       return res.status(403).json({ error: 'Only available to local requests' });
     }
-    const cleanKey = (key?: string) => (key && !key.includes('...') && key.trim().length > 15 ? key.trim() : '');
+    const cleanKey = (key?: string) => (key && !key.includes('...') && key.trim().length > 10 ? key.trim() : '');
     res.json({
       openaiApiKey: cleanKey(process.env.OPENAI_API_KEY),
-      anthropicApiKey: cleanKey(process.env.ANTHROPIC_API_KEY),
-      esvApiKey: cleanKey(process.env.ESV_API_KEY),
+      geminiApiKey: cleanKey(process.env.GEMINI_API_KEY),
     });
   });
 

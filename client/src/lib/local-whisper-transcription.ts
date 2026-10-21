@@ -22,6 +22,7 @@ export class LocalWhisperTranscription {
   private modelSize: LocalWhisperModel = 'tiny';
   private translationProvider: TranslationProvider = 'none';
   private openaiApiKey = '';
+  private geminiApiKey = '';
   private anthropicApiKey = '';
   private lastChunkSentResolve: (() => void) | null = null;
 
@@ -36,7 +37,7 @@ export class LocalWhisperTranscription {
     detectSpeakers: boolean,
     translationProvider: TranslationProvider = 'none',
     openaiApiKey = '',
-    anthropicApiKey = '',
+    geminiApiKey = '',
     modelSize: LocalWhisperModel = 'tiny',
   ): Promise<void> {
     this.sourceLanguage = sourceLanguage;
@@ -44,7 +45,8 @@ export class LocalWhisperTranscription {
     this.detectSpeakers = detectSpeakers;
     this.translationProvider = translationProvider;
     this.openaiApiKey = openaiApiKey;
-    this.anthropicApiKey = anthropicApiKey;
+    this.geminiApiKey = geminiApiKey;
+    this.anthropicApiKey = geminiApiKey;
     this.modelSize = modelSize;
     this.chunkIndex = 0;
 
@@ -207,7 +209,8 @@ export class LocalWhisperTranscription {
           detectSpeakers: this.detectSpeakers,
           translationProvider: this.translationProvider,
           openaiApiKey: this.openaiApiKey,
-          anthropicApiKey: this.anthropicApiKey,
+          geminiApiKey: this.geminiApiKey,
+          anthropicApiKey: this.geminiApiKey,
         }),
       });
 
@@ -231,14 +234,17 @@ export class LocalWhisperTranscription {
     detectSpeakers: boolean,
     translationProvider?: TranslationProvider,
     openaiApiKey?: string,
-    anthropicApiKey?: string,
+    geminiApiKey?: string,
   ): void {
     this.sourceLanguage = sourceLanguage;
     this.targetLanguage = targetLanguage;
     this.detectSpeakers = detectSpeakers;
     if (translationProvider) this.translationProvider = translationProvider;
     if (openaiApiKey !== undefined) this.openaiApiKey = openaiApiKey;
-    if (anthropicApiKey !== undefined) this.anthropicApiKey = anthropicApiKey;
+    if (geminiApiKey !== undefined) {
+      this.geminiApiKey = geminiApiKey;
+      this.anthropicApiKey = geminiApiKey;
+    }
   }
 
   async stop(): Promise<void> {

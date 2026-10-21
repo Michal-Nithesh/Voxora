@@ -8,6 +8,7 @@ export class BrowserSpeechTranscription {
   private detectSpeakers = false;
   private translationProvider: TranslationProvider = 'none';
   private openaiApiKey = '';
+  private geminiApiKey = '';
   private anthropicApiKey = '';
   private glossary = '';
   private sermonContext = '';
@@ -24,7 +25,7 @@ export class BrowserSpeechTranscription {
     detectSpeakers: boolean,
     translationProvider: TranslationProvider = 'none',
     openaiApiKey = '',
-    anthropicApiKey = '',
+    geminiApiKey = '',
     glossary = '',
     sermonContext = '',
   ): Promise<void> {
@@ -33,7 +34,8 @@ export class BrowserSpeechTranscription {
     this.detectSpeakers = detectSpeakers;
     this.translationProvider = translationProvider;
     this.openaiApiKey = openaiApiKey;
-    this.anthropicApiKey = anthropicApiKey;
+    this.geminiApiKey = geminiApiKey;
+    this.anthropicApiKey = geminiApiKey;
     this.glossary = glossary;
     this.sermonContext = sermonContext;
     this.chunkIndex = 0;
@@ -133,7 +135,8 @@ export class BrowserSpeechTranscription {
           detectSpeakers: this.detectSpeakers,
           translationProvider: this.translationProvider,
           openaiApiKey: this.openaiApiKey,
-          anthropicApiKey: this.anthropicApiKey,
+          geminiApiKey: this.geminiApiKey,
+          anthropicApiKey: this.geminiApiKey,
           glossary: this.glossary || undefined,
           sermonContext: this.sermonContext || undefined,
         }),
@@ -159,7 +162,7 @@ export class BrowserSpeechTranscription {
     detectSpeakers: boolean,
     translationProvider?: TranslationProvider,
     openaiApiKey?: string,
-    anthropicApiKey?: string,
+    geminiApiKey?: string,
     glossary?: string,
     sermonContext?: string,
   ): void {
@@ -168,7 +171,10 @@ export class BrowserSpeechTranscription {
     this.detectSpeakers = detectSpeakers;
     if (translationProvider) this.translationProvider = translationProvider;
     if (openaiApiKey !== undefined) this.openaiApiKey = openaiApiKey;
-    if (anthropicApiKey !== undefined) this.anthropicApiKey = anthropicApiKey;
+    if (geminiApiKey !== undefined) {
+      this.geminiApiKey = geminiApiKey;
+      this.anthropicApiKey = geminiApiKey;
+    }
     if (glossary !== undefined) this.glossary = glossary;
     if (sermonContext !== undefined) this.sermonContext = sermonContext;
 

@@ -31,7 +31,7 @@ function ProviderSelect({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="openai">OpenAI GPT-4o-mini</SelectItem>
-        <SelectItem value="claude">Claude Haiku</SelectItem>
+        <SelectItem value="gemini">Google Gemini</SelectItem>
         <SelectItem value="ollama">Ollama (local)</SelectItem>
       </SelectContent>
     </Select>

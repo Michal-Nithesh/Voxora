@@ -19,16 +19,19 @@ export function useDevKeyAutofill(
       .then(data => {
         if (!data) return;
         const updates: Partial<AppSettings> = {};
-        const isRealKey = (k?: string) => Boolean(k && !k.includes('...') && k.trim().length > 15);
+        const isRealKey = (k?: string) => Boolean(k && !k.includes('...') && k.trim().length > 10);
 
         // Clear stale invalid keys in state/storage
         if (settings.openaiApiKey && !isRealKey(settings.openaiApiKey)) {
           updates.openaiApiKey = '';
         }
-        if (settings.anthropicApiKey && !isRealKey(settings.anthropicApiKey)) {
+        if (settings.geminiApiKey && !isRealKey(settings.geminiApiKey)) {
+          updates.geminiApiKey = '';
+        }
+        if (settings.anthropicApiKey) {
           updates.anthropicApiKey = '';
         }
-        if (settings.esvApiKey && settings.esvApiKey.includes('...')) {
+        if (settings.esvApiKey) {
           updates.esvApiKey = '';
         }
 
@@ -36,11 +39,8 @@ export function useDevKeyAutofill(
         if (isRealKey(data.openaiApiKey) && (!settings.openaiApiKey || !isRealKey(settings.openaiApiKey))) {
           updates.openaiApiKey = data.openaiApiKey;
         }
-        if (isRealKey(data.anthropicApiKey) && (!settings.anthropicApiKey || !isRealKey(settings.anthropicApiKey))) {
-          updates.anthropicApiKey = data.anthropicApiKey;
-        }
-        if (data.esvApiKey && !data.esvApiKey.includes('...') && (!settings.esvApiKey || settings.esvApiKey.includes('...'))) {
-          updates.esvApiKey = data.esvApiKey;
+        if (isRealKey(data.geminiApiKey) && (!settings.geminiApiKey || !isRealKey(settings.geminiApiKey))) {
+          updates.geminiApiKey = data.geminiApiKey;
         }
 
         if (Object.keys(updates).length) updateSettings(updates);

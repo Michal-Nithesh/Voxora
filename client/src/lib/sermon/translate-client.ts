@@ -52,9 +52,10 @@ export type TranslateResult = TranslateResultOk | TranslateResultError;
 export interface TranslateRequestOptions {
   sourceLanguage: string;
   targetLanguage: string;
-  translationProvider: 'openai' | 'claude' | 'ollama';
+  translationProvider: 'openai' | 'gemini' | 'claude' | 'ollama';
   model?: string;
   openaiApiKey?: string;
+  geminiApiKey?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
   ollamaModel?: string;
@@ -100,7 +101,8 @@ export async function translateItems(items: TranslateItem[], opts: TranslateRequ
       translationProvider: opts.translationProvider,
       model: opts.model,
       openaiApiKey: opts.openaiApiKey,
-      anthropicApiKey: opts.anthropicApiKey,
+      geminiApiKey: opts.geminiApiKey || opts.anthropicApiKey,
+      anthropicApiKey: opts.geminiApiKey || opts.anthropicApiKey,
       ollamaBaseUrl: opts.ollamaBaseUrl,
       ollamaModel: opts.ollamaModel,
       glossary: opts.glossary,

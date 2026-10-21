@@ -1,5 +1,6 @@
 import { WebSocket as WsWebSocket, WebSocketServer } from 'ws';
 import { transcribeAudio, correctAndTranslateText, correctTranscript, buildWhisperPrompt, isConfiguredOpenAIKey } from './openai';
+import { correctAndTranslateWithGemini, correctTranscriptWithGemini, isConfiguredGeminiKey } from './gemini';
 import { correctAndTranslateWithClaude, correctTranscriptWithClaude } from './anthropic';
 import { correctAndTranslateWithOllama, correctTranscriptWithOllama } from './ollama';
 import { transcribeWithMlxDetailed, type MlxDiag } from './mlx-whisper';
@@ -14,7 +15,7 @@ import { randomUUID } from 'crypto';
 import ffmpeg from 'fluent-ffmpeg';
 import { Semaphore } from './semaphore';
 
-type TranslationProvider = 'openai' | 'claude' | 'ollama' | 'none';
+type TranslationProvider = 'openai' | 'gemini' | 'claude' | 'ollama' | 'none';
 type TranscriptionEngine = 'openai' | 'mlx';
 // 'translate' is the existing chunk pipeline. 'correct-only' is sermon
 // mode's ASR path: correct the chunk (punctuation, homophones) but never
@@ -31,6 +32,7 @@ interface ChunkSession {
   outputMode: OutputMode;
   translationProvider: TranslationProvider;
   openaiApiKey: string;
+  geminiApiKey: string;
   anthropicApiKey: string;
   ollamaBaseUrl: string;
   ollamaModel: string;
@@ -447,12 +449,13 @@ async function processChunk(
             rawText, session.targetLanguage, session.ollamaModel, session.ollamaBaseUrl,
             effectiveGlossary(session.glossary) || undefined, session.previousTranscript || undefined, signal, session.sourceLanguage,
           ));
-        } else if (session.translationProvider === 'claude') {
-          const hasAnthropicKey = !!(session.anthropicApiKey || process.env.ANTHROPIC_API_KEY);
-          if (!hasAnthropicKey) sendDebug(session, `Chunk #${chunkIndex}: ✗ No Anthropic API key`);
-          else sendDebug(session, `Chunk #${chunkIndex}: correcting via Claude Haiku…`);
-          ({ correctedText } = await correctTranscriptWithClaude(
-            rawText, session.targetLanguage, session.anthropicApiKey,
+        } else if (session.translationProvider === 'gemini' || session.translationProvider === 'claude') {
+          const effectiveGeminiKey = session.geminiApiKey || session.anthropicApiKey || '';
+          const hasGeminiKey = !!(effectiveGeminiKey || process.env.GEMINI_API_KEY);
+          if (!hasGeminiKey) sendDebug(session, `Chunk #${chunkIndex}: ✗ No Gemini API key`);
+          else sendDebug(session, `Chunk #${chunkIndex}: correcting via Google Gemini…`);
+          ({ correctedText } = await correctTranscriptWithGemini(
+            rawText, session.targetLanguage, effectiveGeminiKey,
             effectiveGlossary(session.glossary) || undefined, session.previousTranscript || undefined, signal, session.sourceLanguage,
           ));
         } else {
@@ -480,15 +483,16 @@ async function processChunk(
         session.ollamaModel, session.ollamaBaseUrl,
         effectiveGlossary(session.glossary) || undefined, session.sermonContext || undefined, signal,
       ));
-    } else if (session.translationProvider === 'claude') {
-      const hasAnthropicKey = !!(session.anthropicApiKey || process.env.ANTHROPIC_API_KEY);
-      if (!hasAnthropicKey) sendDebug(session, `Chunk #${chunkIndex}: ✗ No Anthropic API key`);
-      else sendDebug(session, `Chunk #${chunkIndex}: sending to Claude Haiku (→ ${session.targetLanguage})…`);
-      ({ correctedText, translatedText } = await correctAndTranslateWithClaude(
+    } else if (session.translationProvider === 'gemini' || session.translationProvider === 'claude') {
+      const effectiveGeminiKey = session.geminiApiKey || session.anthropicApiKey || '';
+      const hasGeminiKey = !!(effectiveGeminiKey || process.env.GEMINI_API_KEY);
+      if (!hasGeminiKey) sendDebug(session, `Chunk #${chunkIndex}: ✗ No Gemini API key`);
+      else sendDebug(session, `Chunk #${chunkIndex}: sending to Google Gemini (→ ${session.targetLanguage})…`);
+      ({ correctedText, translatedText } = await correctAndTranslateWithGemini(
         rawText,
         session.targetLanguage,
         session.detectSpeakers,
-        session.anthropicApiKey,
+        effectiveGeminiKey,
         effectiveGlossary(session.glossary) || undefined,
         session.sermonContext || undefined,
         signal,
@@ -565,7 +569,8 @@ export function setupChunkTranscriptionWebSocket(wss: WebSocketServer): void {
               outputMode: (message.outputMode as OutputMode) || 'translate',
               translationProvider: (message.translationProvider as TranslationProvider) || 'openai',
               openaiApiKey: message.openaiApiKey || '',
-              anthropicApiKey: message.anthropicApiKey || '',
+              geminiApiKey: message.geminiApiKey || message.anthropicApiKey || '',
+              anthropicApiKey: message.geminiApiKey || message.anthropicApiKey || '',
               ollamaBaseUrl: message.ollamaBaseUrl || 'http://localhost:11434',
               ollamaModel: message.ollamaModel || 'qwen3.6:latest',
               glossary: message.glossary || '',
@@ -582,7 +587,7 @@ export function setupChunkTranscriptionWebSocket(wss: WebSocketServer): void {
             activeSessions.set(clientWs, session);
             if (session.archiveDir) {
               // API keys are never written to disk.
-              const safe = { ...message, openaiApiKey: undefined, anthropicApiKey: undefined };
+              const safe = { ...message, openaiApiKey: undefined, geminiApiKey: undefined, anthropicApiKey: undefined };
               appendFile(join(session.archiveDir, 'starts.jsonl'), JSON.stringify({ at: new Date().toISOString(), ...safe }) + '\n').catch(() => {});
             }
             clientWs.send(JSON.stringify({ type: 'ready', archive: !!session.archiveDir }));
@@ -596,7 +601,14 @@ export function setupChunkTranscriptionWebSocket(wss: WebSocketServer): void {
               if (message.outputMode) session.outputMode = message.outputMode;
               if (message.translationProvider) session.translationProvider = message.translationProvider;
               if (message.openaiApiKey !== undefined) session.openaiApiKey = message.openaiApiKey;
-              if (message.anthropicApiKey !== undefined) session.anthropicApiKey = message.anthropicApiKey;
+              if (message.geminiApiKey !== undefined) {
+                session.geminiApiKey = message.geminiApiKey;
+                session.anthropicApiKey = message.geminiApiKey;
+              }
+              if (message.anthropicApiKey !== undefined && !session.geminiApiKey) {
+                session.geminiApiKey = message.anthropicApiKey;
+                session.anthropicApiKey = message.anthropicApiKey;
+              }
               if (message.ollamaBaseUrl !== undefined) session.ollamaBaseUrl = message.ollamaBaseUrl;
               if (message.ollamaModel !== undefined) session.ollamaModel = message.ollamaModel;
               if (message.glossary !== undefined) session.glossary = message.glossary;

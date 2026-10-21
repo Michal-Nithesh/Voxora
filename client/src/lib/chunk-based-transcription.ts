@@ -12,7 +12,7 @@ export interface ChunkTranscriptionEvents {
   onNotice?: (message: string) => void;
 }
 
-export type TranslationProvider = 'openai' | 'claude' | 'ollama' | 'none';
+export type TranslationProvider = 'openai' | 'gemini' | 'claude' | 'ollama' | 'none';
 // Which service actually runs the speech-to-text step. 'mlx' is the local
 // mlx-whisper sidecar (Apple Silicon only) — same wire protocol as 'openai',
 // just routed to a different engine server-side.
@@ -368,7 +368,8 @@ export class ChunkBasedTranscription {
   private openaiApiKey: string;
   private ollamaBaseUrl: string;
   private ollamaModel: string;
-  private anthropicApiKey: string;
+  private geminiApiKey: string = '';
+  private anthropicApiKey: string = '';
   private glossary: string;
   private sermonContext: string;
   private debugMode: boolean;
@@ -460,7 +461,7 @@ export class ChunkBasedTranscription {
     detectSpeakers: boolean,
     translationProvider: TranslationProvider = 'openai',
     openaiApiKey = '',
-    anthropicApiKey = '',
+    geminiApiKey = '',
     glossary = '',
     sermonContext = '',
     debugMode = false,
@@ -479,7 +480,8 @@ export class ChunkBasedTranscription {
     this.engine = engine;
     this.translationProvider = translationProvider;
     this.openaiApiKey = openaiApiKey;
-    this.anthropicApiKey = anthropicApiKey;
+    this.geminiApiKey = geminiApiKey;
+    this.anthropicApiKey = geminiApiKey;
     if (ollamaBaseUrl !== undefined) this.ollamaBaseUrl = ollamaBaseUrl;
     if (ollamaModel !== undefined) this.ollamaModel = ollamaModel;
     this.glossary = glossary;
@@ -554,7 +556,8 @@ export class ChunkBasedTranscription {
       engine: this.engine,
       translationProvider: this.translationProvider,
       openaiApiKey: this.openaiApiKey,
-      anthropicApiKey: this.anthropicApiKey,
+      geminiApiKey: this.geminiApiKey,
+      anthropicApiKey: this.geminiApiKey,
       ollamaBaseUrl: this.ollamaBaseUrl,
       ollamaModel: this.ollamaModel,
       glossary: this.glossary,
@@ -980,7 +983,7 @@ export class ChunkBasedTranscription {
     detectSpeakers: boolean,
     translationProvider?: TranslationProvider,
     openaiApiKey?: string,
-    anthropicApiKey?: string,
+    geminiApiKey?: string,
     glossary?: string,
     sermonContext?: string,
     ollamaBaseUrl?: string,
@@ -991,7 +994,10 @@ export class ChunkBasedTranscription {
     this.detectSpeakers = detectSpeakers;
     if (translationProvider) this.translationProvider = translationProvider;
     if (openaiApiKey !== undefined) this.openaiApiKey = openaiApiKey;
-    if (anthropicApiKey !== undefined) this.anthropicApiKey = anthropicApiKey;
+    if (geminiApiKey !== undefined) {
+      this.geminiApiKey = geminiApiKey;
+      this.anthropicApiKey = geminiApiKey;
+    }
     if (glossary !== undefined) this.glossary = glossary;
     if (ollamaBaseUrl !== undefined) this.ollamaBaseUrl = ollamaBaseUrl;
     if (ollamaModel !== undefined) this.ollamaModel = ollamaModel;
@@ -1005,7 +1011,8 @@ export class ChunkBasedTranscription {
         detectSpeakers,
         translationProvider: this.translationProvider,
         openaiApiKey: this.openaiApiKey,
-        anthropicApiKey: this.anthropicApiKey,
+        geminiApiKey: this.geminiApiKey,
+        anthropicApiKey: this.geminiApiKey,
         ollamaBaseUrl: this.ollamaBaseUrl,
         ollamaModel: this.ollamaModel,
         glossary: this.glossary,

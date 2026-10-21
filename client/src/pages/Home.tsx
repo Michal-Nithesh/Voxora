@@ -204,7 +204,7 @@ export default function Home() {
           sourceLanguageRef.current, targetLanguage, detectSpeakers,
           s.translationProvider,
           s.openaiApiKey,
-          s.anthropicApiKey,
+          s.geminiApiKey,
           s.theologicalGlossary,
           sermonContextRef.current,
           s.ollamaBaseUrl,
@@ -224,7 +224,7 @@ export default function Home() {
             detectSpeakers,
             translationProvider: s.translationProvider,
             openaiApiKey: s.openaiApiKey,
-            anthropicApiKey: s.anthropicApiKey,
+            geminiApiKey: s.geminiApiKey,
             ollamaBaseUrl: s.ollamaBaseUrl,
             ollamaModel: s.ollamaModel,
             glossary: s.theologicalGlossary || undefined,
@@ -262,13 +262,13 @@ export default function Home() {
       detectSpeakersRef.current,
       settings.translationProvider,
       settings.openaiApiKey,
-      settings.anthropicApiKey,
+      settings.geminiApiKey,
       settings.theologicalGlossary,
       sermonContextRef.current,
       settings.ollamaBaseUrl,
       settings.ollamaModel,
     );
-  }, [settings.translationProvider, settings.openaiApiKey, settings.anthropicApiKey, settings.theologicalGlossary, settings.ollamaBaseUrl, settings.ollamaModel]);
+  }, [settings.translationProvider, settings.openaiApiKey, settings.geminiApiKey, settings.theologicalGlossary, settings.ollamaBaseUrl, settings.ollamaModel]);
 
   const swapLanguages = useCallback(() => {
     setSourceLanguage(prev => { setTargetLanguage(prev); return targetLanguage; });
@@ -318,7 +318,7 @@ export default function Home() {
           // so without this override Improve would silently re-enable translation.
           translationProvider: s.translationProvider === 'none' ? 'none' : s.improvementProvider,
           openaiApiKey: s.openaiApiKey,
-          anthropicApiKey: s.anthropicApiKey,
+          geminiApiKey: s.geminiApiKey,
           ollamaBaseUrl: s.ollamaBaseUrl,
           ollamaModel: s.ollamaModel,
           glossary: s.theologicalGlossary || undefined,
@@ -357,10 +357,10 @@ export default function Home() {
 
   const startRecording = useCallback(async () => {
     // ── Pre-flight API key validation ─────────────────────────────────────────
-    if (settings.translationProvider === 'claude' && !settings.anthropicApiKey?.trim()) {
+    if (settings.translationProvider === 'gemini' && !settings.geminiApiKey?.trim()) {
       toast({
-        title: 'Anthropic API key required',
-        description: 'Open Settings and enter your Anthropic API key to use Claude (Haiku).',
+        title: 'Gemini API key required',
+        description: 'Open Settings and enter your Gemini API key to use Google Gemini.',
         variant: 'destructive',
       });
       return;
@@ -426,7 +426,7 @@ export default function Home() {
           // Rough cost estimate based on chars processed
           const s = settingsRef.current;
           const chars = original.length + translated.length;
-          const llmRate = s.translationProvider === 'claude' ? 1.5e-7
+          const llmRate = s.translationProvider === 'gemini' ? 7.5e-8
             : s.translationProvider === 'openai' ? 7.5e-8 : 0;
           const whisperCost = s.transcriptionProvider === 'whisper' ? 0.006 * (chunkDurSecs / 60) : 0;
           sessionCostRef.current += chars * llmRate + whisperCost;
@@ -503,7 +503,7 @@ export default function Home() {
           detectSpeakers,
           settings.translationProvider,
           settings.openaiApiKey,
-          settings.anthropicApiKey,
+          settings.geminiApiKey,
           settings.localWhisperModel,
         );
       } else if (settings.transcriptionProvider === 'browser') {
@@ -515,7 +515,7 @@ export default function Home() {
           detectSpeakers,
           settings.translationProvider,
           settings.openaiApiKey,
-          settings.anthropicApiKey,
+          settings.geminiApiKey,
           settings.theologicalGlossary,
           sermonContextRef.current,
         );
@@ -533,7 +533,7 @@ export default function Home() {
           detectSpeakers,
           settings.translationProvider,
           settings.openaiApiKey,
-          settings.anthropicApiKey,
+          settings.geminiApiKey,
           settings.theologicalGlossary,
           sermonContextRef.current,
           settings.debugMode,
@@ -555,7 +555,7 @@ export default function Home() {
           detectSpeakers,
           settings.translationProvider,
           settings.openaiApiKey,
-          settings.anthropicApiKey,
+          settings.geminiApiKey,
           settings.theologicalGlossary,
           sermonContextRef.current,
           settings.debugMode,
@@ -795,9 +795,11 @@ export default function Home() {
               {' · '}
               {settings.translationProvider === 'none'
                 ? 'No translation'
-                : settings.translationProvider === 'claude'
-                  ? 'Claude Haiku'
-                  : 'GPT-4o-mini'}
+                : settings.translationProvider === 'gemini'
+                  ? 'Google Gemini'
+                  : settings.translationProvider === 'ollama'
+                    ? 'Ollama (local)'
+                    : 'GPT-4o-mini'}
               {settings.theologicalGlossary && ' · Glossary active'}
             </p>
           </div>

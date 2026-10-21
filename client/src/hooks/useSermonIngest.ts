@@ -19,7 +19,8 @@ export interface SermonIngestArgs {
   /** false = skip the per-chunk LLM correction and use Whisper's text as-is. */
   asrCorrection?: boolean;
   openaiApiKey: string;
-  anthropicApiKey: string;
+  geminiApiKey?: string;
+  anthropicApiKey?: string;
   ollamaBaseUrl: string;
   ollamaModel: string;
   glossary: string;
@@ -241,7 +242,7 @@ export function useSermonIngest(args: SermonIngestArgs) {
         false, // detectSpeakers — not meaningful for a single-speaker sermon
         a.asrCorrection === false ? 'none' : a.correctionProvider,
         a.openaiApiKey,
-        a.anthropicApiKey,
+        a.geminiApiKey || a.anthropicApiKey || '',
         a.glossary,
         '', // sermonContext — sermon mode carries context per-sentence at translate time, not per-chunk
         a.debugMode,

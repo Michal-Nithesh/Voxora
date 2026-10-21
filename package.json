@@ -17,6 +17,7 @@
     "edits:asr": "node --import tsx scripts/asr-edits.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "@hookform/resolvers": "^3.10.0",
     "@huggingface/transformers": "^4.2.0",
     "@jridgewell/trace-mapping": "^0.3.25",

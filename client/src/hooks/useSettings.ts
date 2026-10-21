@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react';
 
 export type TranscriptionProvider = 'whisper' | 'browser' | 'transformers' | 'mlx';
-export type TranslationProvider = 'openai' | 'claude' | 'ollama' | 'none';
-export type ImprovementProvider = 'openai' | 'claude';
+export type TranslationProvider = 'openai' | 'gemini' | 'claude' | 'ollama' | 'none';
+export type ImprovementProvider = 'openai' | 'gemini';
 export type SpeechMode = 'monologue' | 'dialogue';
 export type DisplayContent = 'original' | 'translation' | 'both';
 export type TextDisplay = 'subtitle' | 'stream';
 export type LocalWhisperModel = 'tiny' | 'small' | 'medium';
 // Sermon mode never offers 'none' — a correction/translation call is always required there.
-export type SermonTranslationProvider = 'openai' | 'claude' | 'ollama';
+export type SermonTranslationProvider = 'openai' | 'gemini' | 'claude' | 'ollama';
 export type SermonBibleVersion = 'KJV' | 'ESV' | 'LSB' | 'NASB' | 'NKJV';
 export type SermonScriptureFallback = 'kjv' | 'none';
 
@@ -30,7 +30,8 @@ export interface DeviceProfile {
 
 export interface AppSettings {
   openaiApiKey: string;
-  anthropicApiKey: string;
+  geminiApiKey: string;
+  anthropicApiKey?: string;
   transcriptionProvider: TranscriptionProvider;
   translationProvider: TranslationProvider;
   improvementProvider: ImprovementProvider;
@@ -93,6 +94,7 @@ const PREFS_KEY = 'cttay_prefs';
 
 const defaultSettings: AppSettings = {
   openaiApiKey: '',
+  geminiApiKey: '',
   anthropicApiKey: '',
   transcriptionProvider: 'whisper',
   translationProvider: 'openai',
@@ -145,10 +147,10 @@ const defaultSettings: AppSettings = {
 };
 
 const VALID_TRANSCRIPTION: TranscriptionProvider[] = ['whisper', 'browser', 'transformers', 'mlx'];
-const VALID_TRANSLATION: TranslationProvider[] = ['openai', 'claude', 'ollama', 'none'];
-const VALID_IMPROVEMENT: ImprovementProvider[] = ['openai', 'claude'];
+const VALID_TRANSLATION: TranslationProvider[] = ['openai', 'gemini', 'claude', 'ollama', 'none'];
+const VALID_IMPROVEMENT: ImprovementProvider[] = ['openai', 'gemini'];
 const VALID_LOCAL_MODEL: LocalWhisperModel[] = ['tiny', 'small', 'medium'];
-const VALID_SERMON_PROVIDER: SermonTranslationProvider[] = ['openai', 'claude', 'ollama'];
+const VALID_SERMON_PROVIDER: SermonTranslationProvider[] = ['openai', 'gemini', 'claude', 'ollama'];
 const VALID_BIBLE_VERSION: SermonBibleVersion[] = ['KJV', 'ESV', 'LSB', 'NASB', 'NKJV'];
 const VALID_SCRIPTURE_FALLBACK: SermonScriptureFallback[] = ['kjv', 'none'];
 
@@ -302,6 +304,9 @@ function loadSettings(): AppSettings {
   if (typeof merged.openaiApiKey === 'string' && (merged.openaiApiKey.includes('...') || (merged.openaiApiKey.length > 0 && merged.openaiApiKey.length <= 15))) {
     merged.openaiApiKey = '';
   }
+  if (typeof merged.geminiApiKey === 'string' && (merged.geminiApiKey.includes('...') || (merged.geminiApiKey.length > 0 && merged.geminiApiKey.length < 10))) {
+    merged.geminiApiKey = '';
+  }
   if (typeof merged.anthropicApiKey === 'string' && (merged.anthropicApiKey.includes('...') || (merged.anthropicApiKey.length > 0 && merged.anthropicApiKey.length <= 15))) {
     merged.anthropicApiKey = '';
   }
@@ -372,8 +377,7 @@ export function useSettings() {
       try {
         sessionStorage.setItem(PREFS_KEY, JSON.stringify({
           openaiApiKey: next.openaiApiKey,
-          anthropicApiKey: next.anthropicApiKey,
-          esvApiKey: next.esvApiKey,
+          geminiApiKey: next.geminiApiKey,
         }));
       } catch {}
 

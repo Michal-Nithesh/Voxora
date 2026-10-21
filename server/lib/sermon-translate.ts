@@ -11,8 +11,9 @@ import { getGlossaryBundle } from './glossary-store';
 import { checkGlossaryAdherence, type GlossaryWarning } from './glossary-check';
 import { adjudicateScripture, type ReadingCandidate } from './scripture';
 import { Semaphore } from './semaphore';
+import { callGemini } from './gemini';
 
-export type SermonTranslationProvider = 'openai' | 'claude' | 'ollama';
+export type SermonTranslationProvider = 'openai' | 'gemini' | 'claude' | 'ollama';
 
 export interface TranslateItemInput {
   id: string;
@@ -49,6 +50,7 @@ export interface TranslateOptions {
   translationProvider: SermonTranslationProvider;
   model?: string;
   openaiApiKey?: string;
+  geminiApiKey?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
   ollamaModel?: string;
@@ -230,7 +232,9 @@ function classifyError(error: unknown): string {
 }
 
 async function callModelDefault(systemPrompt: string, userMessage: string, opts: TranslateOptions, signal: AbortSignal): Promise<string> {
-  if (opts.translationProvider === 'claude') return callClaudeCached(systemPrompt, userMessage, opts.anthropicApiKey || '', signal);
+  if (opts.translationProvider === 'gemini' || opts.translationProvider === 'claude') {
+    return callGemini(systemPrompt, userMessage, opts.geminiApiKey || opts.anthropicApiKey, signal);
+  }
   if (opts.translationProvider === 'ollama') return callOllama(systemPrompt, userMessage, opts, signal);
   return callOpenAI(systemPrompt, userMessage, opts, signal);
 }
