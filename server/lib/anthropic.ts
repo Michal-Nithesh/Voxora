@@ -19,6 +19,10 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ko: 'Korean',
 };
 
+export function isConfiguredAnthropicKey(key?: string): boolean {
+  return Boolean(key && !key.includes('...') && key.startsWith('sk-ant-') && key.trim().length > 15);
+}
+
 async function callClaude(
   systemPrompt: string,
   userContent: string,
@@ -26,9 +30,13 @@ async function callClaude(
   maxTokens = 1024,
   signal?: AbortSignal,
 ): Promise<string> {
-  const effectiveKey = apiKey || process.env.ANTHROPIC_API_KEY || '';
+  const effectiveKey = (apiKey && isConfiguredAnthropicKey(apiKey))
+    ? apiKey.trim()
+    : (process.env.ANTHROPIC_API_KEY && isConfiguredAnthropicKey(process.env.ANTHROPIC_API_KEY))
+      ? process.env.ANTHROPIC_API_KEY.trim()
+      : '';
   if (!effectiveKey) {
-    throw new Error('No Anthropic API key provided. Add one in Settings.');
+    throw new Error('No valid Anthropic API key configured. Add one in Settings or set ANTHROPIC_API_KEY.');
   }
 
   const timeout = AbortSignal.timeout(30_000);

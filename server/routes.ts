@@ -702,10 +702,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!isLoopback) {
       return res.status(403).json({ error: 'Only available to local requests' });
     }
+    const cleanKey = (key?: string) => (key && !key.includes('...') && key.trim().length > 15 ? key.trim() : '');
     res.json({
-      openaiApiKey: process.env.OPENAI_API_KEY || '',
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
-      esvApiKey: process.env.ESV_API_KEY || '',
+      openaiApiKey: cleanKey(process.env.OPENAI_API_KEY),
+      anthropicApiKey: cleanKey(process.env.ANTHROPIC_API_KEY),
+      esvApiKey: cleanKey(process.env.ESV_API_KEY),
     });
   });
 

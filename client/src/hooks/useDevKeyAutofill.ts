@@ -19,9 +19,30 @@ export function useDevKeyAutofill(
       .then(data => {
         if (!data) return;
         const updates: Partial<AppSettings> = {};
-        if (data.openaiApiKey && !settings.openaiApiKey) updates.openaiApiKey = data.openaiApiKey;
-        if (data.anthropicApiKey && !settings.anthropicApiKey) updates.anthropicApiKey = data.anthropicApiKey;
-        if (data.esvApiKey && !settings.esvApiKey) updates.esvApiKey = data.esvApiKey;
+        const isRealKey = (k?: string) => Boolean(k && !k.includes('...') && k.trim().length > 15);
+
+        // Clear stale invalid keys in state/storage
+        if (settings.openaiApiKey && !isRealKey(settings.openaiApiKey)) {
+          updates.openaiApiKey = '';
+        }
+        if (settings.anthropicApiKey && !isRealKey(settings.anthropicApiKey)) {
+          updates.anthropicApiKey = '';
+        }
+        if (settings.esvApiKey && settings.esvApiKey.includes('...')) {
+          updates.esvApiKey = '';
+        }
+
+        // Fill valid keys from server dev-config if current is missing or was placeholder
+        if (isRealKey(data.openaiApiKey) && (!settings.openaiApiKey || !isRealKey(settings.openaiApiKey))) {
+          updates.openaiApiKey = data.openaiApiKey;
+        }
+        if (isRealKey(data.anthropicApiKey) && (!settings.anthropicApiKey || !isRealKey(settings.anthropicApiKey))) {
+          updates.anthropicApiKey = data.anthropicApiKey;
+        }
+        if (data.esvApiKey && !data.esvApiKey.includes('...') && (!settings.esvApiKey || settings.esvApiKey.includes('...'))) {
+          updates.esvApiKey = data.esvApiKey;
+        }
+
         if (Object.keys(updates).length) updateSettings(updates);
       })
       .catch(() => {});

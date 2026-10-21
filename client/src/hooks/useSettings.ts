@@ -298,6 +298,17 @@ function loadSettings(): AppSettings {
     merged.sermonScriptureFallback = defaultSettings.sermonScriptureFallback;
   }
 
+  // Sanitize any placeholder/dummy keys that might be lingering in storage
+  if (typeof merged.openaiApiKey === 'string' && (merged.openaiApiKey.includes('...') || (merged.openaiApiKey.length > 0 && merged.openaiApiKey.length <= 15))) {
+    merged.openaiApiKey = '';
+  }
+  if (typeof merged.anthropicApiKey === 'string' && (merged.anthropicApiKey.includes('...') || (merged.anthropicApiKey.length > 0 && merged.anthropicApiKey.length <= 15))) {
+    merged.anthropicApiKey = '';
+  }
+  if (typeof merged.esvApiKey === 'string' && merged.esvApiKey.includes('...')) {
+    merged.esvApiKey = '';
+  }
+
   return merged;
 }
 

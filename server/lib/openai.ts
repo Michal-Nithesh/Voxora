@@ -9,12 +9,20 @@ import { homophoneExamples, NO_ANNOTATIONS_RULE, guardCorrection } from './corre
 const MAX_CLIENTS = 50;
 const clientCache = new Map<string, OpenAI>();
 
+export function isConfiguredOpenAIKey(key?: string): boolean {
+  return Boolean(key && !key.includes('...') && key.startsWith('sk-') && key.trim().length > 15);
+}
+
 // Exported so server/lib/sermon-translate.ts can reuse the same
 // per-API-key client cache instead of constructing a fresh OpenAI client
 // per request.
 export function client(apiKey?: string): OpenAI {
-  const effectiveKey = apiKey || process.env.OPENAI_API_KEY || '';
-  if (!effectiveKey) throw new Error('No OpenAI API key provided. Add one in Settings or configure OPENAI_API_KEY.');
+  const effectiveKey = (apiKey && isConfiguredOpenAIKey(apiKey))
+    ? apiKey.trim()
+    : (process.env.OPENAI_API_KEY && isConfiguredOpenAIKey(process.env.OPENAI_API_KEY))
+      ? process.env.OPENAI_API_KEY.trim()
+      : '';
+  if (!effectiveKey) throw new Error('No valid OpenAI API key configured. Add one in Settings or configure OPENAI_API_KEY in .env.');
   const hash = createHash('sha256').update(effectiveKey).digest('hex');
   if (clientCache.has(hash)) {
     const c = clientCache.get(hash)!;

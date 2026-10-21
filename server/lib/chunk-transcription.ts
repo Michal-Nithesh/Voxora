@@ -1,5 +1,5 @@
 import { WebSocket as WsWebSocket, WebSocketServer } from 'ws';
-import { transcribeAudio, correctAndTranslateText, correctTranscript, buildWhisperPrompt } from './openai';
+import { transcribeAudio, correctAndTranslateText, correctTranscript, buildWhisperPrompt, isConfiguredOpenAIKey } from './openai';
 import { correctAndTranslateWithClaude, correctTranscriptWithClaude } from './anthropic';
 import { correctAndTranslateWithOllama, correctTranscriptWithOllama } from './ollama';
 import { transcribeWithMlxDetailed, type MlxDiag } from './mlx-whisper';
@@ -344,16 +344,20 @@ async function processChunk(
       rawText = guarded.text;
       archive.rawText = rawText;
     } else {
-      const hasOpenAIKey = !!(session.openaiApiKey || process.env.OPENAI_API_KEY);
-      if (!hasOpenAIKey) {
-        sendDebug(session, `Chunk #${chunkIndex}: ✗ No OpenAI API key — transcription will fail`);
-      } else {
-        sendDebug(session, `Chunk #${chunkIndex}: sending to Whisper (${session.sourceLanguage})…`);
+      const effectiveKey = (session.openaiApiKey && isConfiguredOpenAIKey(session.openaiApiKey))
+        ? session.openaiApiKey
+        : (process.env.OPENAI_API_KEY && isConfiguredOpenAIKey(process.env.OPENAI_API_KEY))
+          ? process.env.OPENAI_API_KEY
+          : '';
+
+      if (!effectiveKey) {
+        throw new Error('OpenAI API key is missing or invalid. Please configure a valid key in Settings or switch speech provider to Browser Speech / Local Whisper.');
       }
+      sendDebug(session, `Chunk #${chunkIndex}: sending to Whisper (${session.sourceLanguage})…`);
       const hasPrompt = !!buildWhisperPrompt(effectiveGlossary(session.glossary) || undefined, session.sermonContext || undefined, session.previousTranscript || undefined, session.sourceLanguage);
       const guarded = await transcribeGuarded(
         (usePrompt) => transcribeAudio(
-          audioPath!, session.sourceLanguage, session.openaiApiKey || undefined,
+          audioPath!, session.sourceLanguage, effectiveKey,
           usePrompt ? effectiveGlossary(session.glossary) || undefined : undefined,
           usePrompt ? session.sermonContext || undefined : undefined,
           signal,
